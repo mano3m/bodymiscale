@@ -16,6 +16,7 @@ from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import StateType
 
 from custom_components.bodymiscale.metrics import BodyScaleMetricsHandler
@@ -175,7 +176,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     return True
 
 
-class Bodymiscale(BodyScaleBaseEntity):
+class Bodymiscale(BodyScaleBaseEntity, RestoreEntity):
     """Bodymiscale entity."""
 
     def __init__(self, handler: BodyScaleMetricsHandler):
@@ -190,6 +191,24 @@ class Bodymiscale(BodyScaleBaseEntity):
     async def async_added_to_hass(self) -> None:
         """After being added to hass."""
         await super().async_added_to_hass()
+
+        # Restore previous state
+        last_state = await self.async_get_last_state()
+        if last_state is not None:
+            # Attributes to exclude (computed or from config)
+            exclude_attrs = {
+                ATTR_BMILABEL,
+                ATTR_FATMASSTOLOSE,
+                ATTR_FATMASSTOGAIN,
+                CONF_HEIGHT,
+                CONF_GENDER,
+                ATTR_IDEAL,
+                ATTR_AGE,
+            }
+            self._available_metrics = {
+                k: v for k, v in last_state.attributes.items() if k not in exclude_attrs
+            }
+            self._attr_state = last_state.state
 
         loop = asyncio.get_running_loop()
 
