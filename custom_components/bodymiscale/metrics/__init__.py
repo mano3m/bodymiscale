@@ -188,13 +188,11 @@ class BodyScaleMetricsHandler:
             TTLCache(maxsize=len(Metric), ttl=60)
         )
 
+        # Counter to track pending sensor restorations
+        self._pending_restorations = 0
+
         # Flag to track if restoration is complete - ignore source sensor updates until set
         self._restoration_complete = False
-
-        # Counter to track pending sensor restorations
-        self._pending_restorations = (
-            len(Metric) + 1
-        )  # +1 for the main entity restoration
 
         # Sensor problems: { "weight": "high", "impedance": "unavailable", ... }
         self._sensor_problems: dict[str, str] = {}
@@ -269,9 +267,24 @@ class BodyScaleMetricsHandler:
 
         return _remove_listener
 
+    # ── Restoration ────────────────────────────────────────────────────────────
+
+    def add_restoration_sensor(self, count: int = 1) -> None:
+        """Add pending restorations for sensors that are being restored."""
+        self._pending_restorations += count
+        _LOGGER.debug(
+            "Added %d restoration sensor(s), pending restorations: %d",
+            count,
+            self._pending_restorations,
+        )
+
     def mark_restoration_complete(self) -> None:
         """Mark that a sensor has restored and check if all are done."""
         self._pending_restorations -= 1
+        _LOGGER.debug(
+            "Restoration step completed, pending restorations: %d",
+            self._pending_restorations,
+        )
         if self._pending_restorations <= 0:
             self._restoration_complete = True
             _LOGGER.debug("Restoration complete, enabling source sensor updates")
@@ -322,6 +335,10 @@ class BodyScaleMetricsHandler:
         # Sensor back to unknown → clear the problem without recalculating
         if raw == STATE_UNKNOWN:
             self._clear_sensor_problem(entity_id)
+            _LOGGER.debug(
+                "Sensor %s state is unknown, clearing problem and skipping processing",
+                entity_id,
+            )
             return
 
         valid = False
@@ -383,15 +400,20 @@ class BodyScaleMetricsHandler:
         self._update_available_metric(Metric.WEIGHT, val)
 
         # Fallback timestamp if no dedicated sensor
-        # Only update if this is a fresh measurement (not a restoration)
-        # A fresh measurement is when the previous state was not unknown/unavailable
         if (
             CONF_SENSOR_LAST_MEASUREMENT_TIME not in self._config
             or self._available_metrics.get(Metric.LAST_MEASUREMENT_TIME) is None
-        ) and previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
-            self._update_available_metric(
-                Metric.LAST_MEASUREMENT_TIME, state.last_changed
-            )
+        ):
+            # Only update if this is a fresh measurement (not a restoration)
+            # A fresh measurement is when the previous state was not unknown/unavailable
+            if previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
+                self._update_available_metric(
+                    Metric.LAST_MEASUREMENT_TIME, state.last_changed
+                )
+            else:
+                _LOGGER.debug(
+                    "LAST_MEASUREMENT_TIME previous state is unknown, ignoring as assuming from restart"
+                )
 
         return True, None
 
@@ -416,15 +438,20 @@ class BodyScaleMetricsHandler:
         self._update_available_metric(metric, val)
 
         # Fallback timestamp if no dedicated sensor
-        # Only update if this is a fresh measurement (not a restoration)
-        # A fresh measurement is when the previous state was not unknown/unavailable
         if (
             CONF_SENSOR_LAST_MEASUREMENT_TIME not in self._config
             or self._available_metrics.get(Metric.LAST_MEASUREMENT_TIME) is None
-        ) and previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
-            self._update_available_metric(
-                Metric.LAST_MEASUREMENT_TIME, state.last_changed
-            )
+        ):
+            # Only update if this is a fresh measurement (not a restoration)
+            # A fresh measurement is when the previous state was not unknown/unavailable
+            if previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
+                self._update_available_metric(
+                    Metric.LAST_MEASUREMENT_TIME, state.last_changed
+                )
+            else:
+                _LOGGER.debug(
+                    "LAST_MEASUREMENT_TIME previous state is unknown, ignoring as assuming from restart"
+                )
 
         return True, None
 

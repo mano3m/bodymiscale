@@ -291,6 +291,9 @@ async def async_setup_entry(
             ]
         )
 
+    # Increment pending restorations for each new sensor being added, so the handler knows to wait for them before processing updates
+    handler.add_restoration_sensor(len(new_sensors))
+
     async_add_entities(new_sensors)
 
 

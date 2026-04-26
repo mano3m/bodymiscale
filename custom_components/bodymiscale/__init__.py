@@ -113,6 +113,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     hass.data[DOMAIN][HANDLERS][entry.entry_id] = handler
 
+    # Increment pending restorations for the main entity
+    handler.add_restoration_sensor()
+
     component: EntityComponent = hass.data[DOMAIN][COMPONENT]
     await component.async_add_entities([Bodymiscale(handler)])
 
