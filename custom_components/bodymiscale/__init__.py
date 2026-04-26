@@ -128,6 +128,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+
+    # Explicitly remove the main Bodymiscale entity before unloading platforms
+    component: EntityComponent = hass.data[DOMAIN][COMPONENT]
+    handler = hass.data[DOMAIN][HANDLERS].get(entry.entry_id)
+    if handler:
+        unique_id = f"{DOMAIN}_{handler.config.get(CONF_NAME, '')}_bodymiscale"
+        entity = component.get_entity(unique_id)
+        if entity:
+            await component.async_remove_entity(entity.entity_id)
+
     unload_ok: bool = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
