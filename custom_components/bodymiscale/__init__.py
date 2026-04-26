@@ -210,6 +210,11 @@ class Bodymiscale(BodyScaleBaseEntity, RestoreEntity):
             }
             self._attr_state = last_state.state
 
+            self.async_write_ha_state()
+
+        # Mark restoration complete for the main entity
+        self._handler.mark_restoration_complete()
+
         loop = asyncio.get_running_loop()
 
         def on_value(value: StateType | datetime, *, metric: Metric) -> None:

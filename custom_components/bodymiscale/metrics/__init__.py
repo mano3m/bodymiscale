@@ -192,7 +192,9 @@ class BodyScaleMetricsHandler:
         self._restoration_complete = False
 
         # Counter to track pending sensor restorations
-        self._pending_restorations = len(Metric)
+        self._pending_restorations = (
+            len(Metric) + 1
+        )  # +1 for the main entity restoration
 
         # Sensor problems: { "weight": "high", "impedance": "unavailable", ... }
         self._sensor_problems: dict[str, str] = {}
