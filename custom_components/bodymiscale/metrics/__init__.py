@@ -303,9 +303,9 @@ class BodyScaleMetricsHandler:
     def _state_changed(
         self, entity_id: str | None, new_state: State | None, old_state: State | None
     ) -> None:
-        if entity_id is None or new_state is None or old_state is None:
+        if entity_id is None or new_state is None:
             _LOGGER.debug(
-                "During source sensor state change, entity_id or new_state or old_state was None. Skipping processing."
+                "During source sensor state change, entity_id or new_state was None. Skipping processing."
             )
             return
 
@@ -377,7 +377,7 @@ class BodyScaleMetricsHandler:
     # ── Process helpers ───────────────────────────────────────────────────────
 
     def _process_weight(
-        self, state: State, previous_state: State
+        self, state: State, previous_state: State | None
     ) -> tuple[bool, str | None]:
         raw = state.state
 
@@ -406,7 +406,11 @@ class BodyScaleMetricsHandler:
         ):
             # Only update if this is a fresh measurement (not a restoration)
             # A fresh measurement is when the previous state was not unknown/unavailable
-            if previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
+            if previous_state and previous_state.state not in (
+                STATE_UNKNOWN,
+                STATE_UNAVAILABLE,
+                None,
+            ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
                 )
@@ -418,7 +422,7 @@ class BodyScaleMetricsHandler:
         return True, None
 
     def _process_impedance(
-        self, state: State, metric: Metric, previous_state: State
+        self, state: State, metric: Metric, previous_state: State | None
     ) -> tuple[bool, str | None]:
         raw = state.state
 
@@ -444,7 +448,11 @@ class BodyScaleMetricsHandler:
         ):
             # Only update if this is a fresh measurement (not a restoration)
             # A fresh measurement is when the previous state was not unknown/unavailable
-            if previous_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE, None):
+            if previous_state and previous_state.state not in (
+                STATE_UNKNOWN,
+                STATE_UNAVAILABLE,
+                None,
+            ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
                 )
