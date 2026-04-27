@@ -226,7 +226,7 @@ class BodyScaleMetricsHandler:
         if CONF_SENSOR_LAST_MEASUREMENT_TIME in self._config:
             sensors.append(self._config[CONF_SENSOR_LAST_MEASUREMENT_TIME])
 
-        self._remove_listener = async_track_state_change_event(
+        self._remove_listener: CALLBACK_TYPE | None = async_track_state_change_event(
             self._hass,
             sensors,
             self._state_changed_event,
@@ -243,6 +243,14 @@ class BodyScaleMetricsHandler:
     def config_entry_id(self) -> str:
         """Return config entry id."""
         return self._config_entry_id
+
+    @callback
+    def unload(self) -> None:
+        """Unload the handler and remove Home Assistant listeners."""
+        if self._remove_listener is not None:
+            self._remove_listener()
+            self._remove_listener = None
+        self._subscribers.clear()
 
     # ── Subscribe ────────────────────────────────────────────────────────────
 

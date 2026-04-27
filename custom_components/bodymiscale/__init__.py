@@ -43,6 +43,7 @@ from .const import (
     CONF_SENSOR_PROFILE_ID,
     CONF_SENSOR_WEIGHT,
     DOMAIN,
+    ENTITIES,
     HANDLERS,
     MIN_REQUIRED_HA_VERSION,
     PLATFORMS,
@@ -103,6 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DOMAIN,
             {
                 COMPONENT: EntityComponent(_LOGGER, DOMAIN, hass),
+                ENTITIES: {},
                 HANDLERS: {},
             },
         )
@@ -117,7 +119,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     handler.add_restoration_sensor()
 
     component: EntityComponent = hass.data[DOMAIN][COMPONENT]
-    await component.async_add_entities([Bodymiscale(handler)])
+    entity = Bodymiscale(handler)
+    await component.async_add_entities([entity])
+    hass.data[DOMAIN][ENTITIES][entry.entry_id] = entity.entity_id
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -131,7 +135,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok: bool = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        del hass.data[DOMAIN][HANDLERS][entry.entry_id]
+        entity_id = hass.data[DOMAIN][ENTITIES].pop(entry.entry_id, None)
+        if entity_id is not None:
+            component: EntityComponent = hass.data[DOMAIN][COMPONENT]
+            await component.async_remove_entity(entity_id)
+
+        handler: BodyScaleMetricsHandler = hass.data[DOMAIN][HANDLERS].pop(
+            entry.entry_id
+        )
+        handler.unload()
         if len(hass.data[DOMAIN][HANDLERS]) == 0:
             hass.data.pop(DOMAIN)
 
@@ -240,6 +252,10 @@ class Bodymiscale(BodyScaleBaseEntity, RestoreEntity):
             )
 
         def on_remove() -> None:
+            if self._timer_handle is not None:
+                self._timer_handle.cancel()
+                self._timer_handle = None
+
             for subscription in remove_subscriptions:
                 subscription()
 
