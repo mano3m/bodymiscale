@@ -430,6 +430,12 @@ class BodyScaleMetricsHandler:
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
                 )
+                _LOGGER.debug(
+                    "LAST_MEASUREMENT_TIME updated because previous_state was %s, previous_val was %s and val is %s",
+                    previous_state.state if previous_state else None,
+                    previous_val,
+                    val,
+                )
             else:
                 _LOGGER.debug(
                     "LAST_MEASUREMENT_TIME previous state is unknown and %s is equal to %s, ignoring as assuming from restart",
@@ -481,6 +487,12 @@ class BodyScaleMetricsHandler:
             ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
+                )
+                _LOGGER.debug(
+                    "LAST_MEASUREMENT_TIME updated because previous_state was %s, previous_val was %s and val is %s",
+                    previous_state.state if previous_state else None,
+                    previous_val,
+                    val,
                 )
             else:
                 _LOGGER.debug(
