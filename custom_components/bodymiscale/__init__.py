@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, CONF_SENSORS, STATE_OK, STATE_PROBLEM
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityDescription
+from homeassistant.helpers.entity import EntityCategory, EntityDescription
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.entity_platform import EntityPlatform
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -227,7 +227,12 @@ class Bodymiscale(BodyScaleBaseEntity, RestoreEntity):
         """Initialize the Bodymiscale component."""
         super().__init__(
             handler,
-            EntityDescription(key="bodymiscale", name=None, icon="mdi:human"),
+            EntityDescription(
+                key="bodymiscale",
+                name=None,
+                icon="mdi:human",
+                entity_category=EntityCategory.DIAGNOSTIC,
+            ),
         )
         self._timer_handle: asyncio.TimerHandle | None = None
         self._available_metrics: MutableMapping[str, StateType | datetime] = {}
