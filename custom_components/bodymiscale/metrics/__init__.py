@@ -405,6 +405,7 @@ class BodyScaleMetricsHandler:
         if state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UNIT_POUNDS:
             val *= 0.45359237
 
+        previous_val = self._available_metrics.get(Metric.WEIGHT)
         self._update_available_metric(Metric.WEIGHT, val)
 
         # Fallback timestamp if no dedicated sensor
@@ -414,17 +415,26 @@ class BodyScaleMetricsHandler:
         ):
             # Only update if this is a fresh measurement (not a restoration)
             # A fresh measurement is when the previous state was not unknown/unavailable
-            if previous_state and previous_state.state not in (
-                STATE_UNKNOWN,
-                STATE_UNAVAILABLE,
-                None,
+            # or the value changed compared to the previously (re)stored value
+            # (during restart or first measurement)
+            if (
+                previous_state
+                and previous_state.state
+                not in (
+                    STATE_UNKNOWN,
+                    STATE_UNAVAILABLE,
+                    None,
+                )
+                or previous_val != val
             ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
                 )
             else:
                 _LOGGER.debug(
-                    "LAST_MEASUREMENT_TIME previous state is unknown, ignoring as assuming from restart"
+                    "LAST_MEASUREMENT_TIME previous state is unknown and %s is equal to %s, ignoring as assuming from restart",
+                    previous_val,
+                    val,
                 )
 
         return True, None
@@ -447,6 +457,7 @@ class BodyScaleMetricsHandler:
         if val > CONSTRAINT_IMPEDANCE_MAX:
             return False, "high"
 
+        previous_val = self._available_metrics.get(Metric.WEIGHT)
         self._update_available_metric(metric, val)
 
         # Fallback timestamp if no dedicated sensor
@@ -456,17 +467,26 @@ class BodyScaleMetricsHandler:
         ):
             # Only update if this is a fresh measurement (not a restoration)
             # A fresh measurement is when the previous state was not unknown/unavailable
-            if previous_state and previous_state.state not in (
-                STATE_UNKNOWN,
-                STATE_UNAVAILABLE,
-                None,
+            # or the value changed compared to the previously (re)stored value
+            # (during restart or first measurement)
+            if (
+                previous_state
+                and previous_state.state
+                not in (
+                    STATE_UNKNOWN,
+                    STATE_UNAVAILABLE,
+                    None,
+                )
+                or previous_val != val
             ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
                 )
             else:
                 _LOGGER.debug(
-                    "LAST_MEASUREMENT_TIME previous state is unknown, ignoring as assuming from restart"
+                    "LAST_MEASUREMENT_TIME previous state is unknown and %s is equal to %s, ignoring as assuming from restart",
+                    previous_val,
+                    val,
                 )
 
         return True, None
