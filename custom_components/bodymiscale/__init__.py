@@ -11,10 +11,16 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from awesomeversion import AwesomeVersion
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, CONF_SENSORS, STATE_OK, STATE_PROBLEM
+from homeassistant.const import (
+    CONF_NAME,
+    CONF_SENSORS,
+    STATE_OK,
+    STATE_PROBLEM,
+    EntityCategory,
+)
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory, EntityDescription
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.entity_platform import EntityPlatform
 from homeassistant.helpers.restore_state import RestoreEntity
