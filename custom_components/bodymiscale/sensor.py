@@ -347,6 +347,7 @@ class BodyScaleSensor(BodyScaleBaseEntity, RestoreSensor):
                 )
                 self._attr_extra_state_attributes = dict(attributes)
 
+            self._handler.restore_metric(self._metric, self._attr_native_value)
             self.async_write_ha_state()
 
         # Mark this sensor's restoration as complete

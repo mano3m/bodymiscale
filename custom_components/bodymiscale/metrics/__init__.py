@@ -297,6 +297,35 @@ class BodyScaleMetricsHandler:
             self._restoration_complete = True
             _LOGGER.debug("Restoration complete, enabling source sensor updates")
 
+    def restore_metric(self, metric: Metric, state: StateType | datetime) -> None:
+        """Seed a metric from a restored Home Assistant entity state."""
+        restored_source_metrics = {
+            Metric.WEIGHT,
+            Metric.IMPEDANCE,
+            Metric.IMPEDANCE_LOW,
+            Metric.IMPEDANCE_HIGH,
+            Metric.LAST_MEASUREMENT_TIME,
+        }
+        if metric not in restored_source_metrics:
+            return
+
+        if metric == Metric.LAST_MEASUREMENT_TIME:
+            if isinstance(state, datetime):
+                self._update_available_metric(metric, state)
+            return
+
+        if state is None or isinstance(state, datetime):
+            _LOGGER.debug("Ignoring restored %s value %s", metric, state)
+            return
+
+        try:
+            state = float(state)
+        except (TypeError, ValueError):
+            _LOGGER.debug("Ignoring restored %s value %s", metric, state)
+            return
+
+        self._update_available_metric(metric, state)
+
     # ── State change ─────────────────────────────────────────────────────────
 
     @callback
