@@ -312,6 +312,11 @@ class BodyScaleMetricsHandler:
         if metric == Metric.LAST_MEASUREMENT_TIME:
             if isinstance(state, datetime):
                 self._update_available_metric(metric, state)
+            elif isinstance(state, str):
+                try:
+                    self._update_available_metric(metric, datetime.fromisoformat(state))
+                except ValueError:
+                    _LOGGER.debug("Ignoring restored %s value %s", metric, state)
             return
 
         if state is None or isinstance(state, datetime):

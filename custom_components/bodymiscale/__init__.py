@@ -265,6 +265,17 @@ class Bodymiscale(BodyScaleBaseEntity, RestoreEntity):
             self._available_metrics = {
                 k: v for k, v in last_state.attributes.items() if k not in exclude_attrs
             }
+            for metric in (
+                Metric.WEIGHT,
+                Metric.IMPEDANCE,
+                Metric.IMPEDANCE_LOW,
+                Metric.IMPEDANCE_HIGH,
+                Metric.LAST_MEASUREMENT_TIME,
+            ):
+                if metric.value in self._available_metrics:
+                    self._handler.restore_metric(
+                        metric, self._available_metrics[metric.value]
+                    )
             self._attr_state = last_state.state
 
             self.async_write_ha_state()
