@@ -148,15 +148,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     hass.data[DOMAIN][HANDLERS][entry.entry_id] = handler
 
-    # Increment pending restorations for the main entity
+    # Reserve the main entity restoration before sensors can restore.
     handler.add_restoration_sensor()
 
+    # Let sensor.py register its own restoration slots first.
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Add the main entity last so restoration cannot complete too early.
     component: EntityComponent = hass.data[DOMAIN][COMPONENT]
     entity = Bodymiscale(handler)
     await _async_add_bodymiscale_entity(component, entry, entity)
     hass.data[DOMAIN][ENTITIES][entry.entry_id] = entity.entity_id
-
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
