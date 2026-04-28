@@ -440,6 +440,11 @@ class BodyScaleMetricsHandler:
             val *= 0.45359237
 
         previous_val = self._available_metrics.get(Metric.WEIGHT)
+        decimals = self._dependencies[Metric.WEIGHT].decimals
+        assert decimals is not None
+        previous_val_changed = not isinstance(previous_val, (int, float)) or round(
+            float(previous_val), decimals
+        ) != round(val, decimals)
         self._update_available_metric(Metric.WEIGHT, val)
 
         # Fallback timestamp if no dedicated sensor
@@ -459,7 +464,7 @@ class BodyScaleMetricsHandler:
                     STATE_UNAVAILABLE,
                     None,
                 )
-                or previous_val != val
+                or previous_val_changed
             ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
@@ -498,6 +503,11 @@ class BodyScaleMetricsHandler:
             return False, "high"
 
         previous_val = self._available_metrics.get(metric)
+        decimals = self._dependencies[metric].decimals
+        assert decimals is not None
+        previous_val_changed = not isinstance(previous_val, (int, float)) or round(
+            float(previous_val), decimals
+        ) != round(val, decimals)
         self._update_available_metric(metric, val)
 
         # Fallback timestamp if no dedicated sensor
@@ -517,7 +527,7 @@ class BodyScaleMetricsHandler:
                     STATE_UNAVAILABLE,
                     None,
                 )
-                or previous_val != val
+                or previous_val_changed
             ):
                 self._update_available_metric(
                     Metric.LAST_MEASUREMENT_TIME, state.last_changed
