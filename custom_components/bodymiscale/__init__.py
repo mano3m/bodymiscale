@@ -16,6 +16,7 @@ from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers.entity_platform import EntityPlatform
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import StateType
 
@@ -55,6 +56,8 @@ from .entity import BodyScaleBaseEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+MAIN_ENTITY_PLATFORMS = "main_entity_platforms"
+
 SCHEMA_SENSORS = vol.Schema(
     {
         vol.Required(CONF_SENSOR_WEIGHT): cv.entity_id,
@@ -82,6 +85,27 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
+async def _async_add_bodymiscale_entity(
+    component: EntityComponent,
+    entry: ConfigEntry,
+    entity: "Bodymiscale",
+) -> None:
+    """Add the main Bodymiscale entity with config entry context."""
+    platform = EntityPlatform(
+        hass=component.hass,
+        logger=_LOGGER,
+        domain=DOMAIN,
+        platform_name=DOMAIN,
+        platform=None,
+        scan_interval=component.scan_interval,
+        entity_namespace=None,
+    )
+    platform.async_prepare()
+    platform.config_entry = entry
+    component.hass.data[DOMAIN][MAIN_ENTITY_PLATFORMS][entry.entry_id] = platform
+    await platform.async_add_entities([entity])
+
+
 def is_ha_supported() -> bool:
     """Return True, if current HA version is supported."""
     if AwesomeVersion(HA_VERSION) >= MIN_REQUIRED_HA_VERSION:
@@ -106,9 +130,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 COMPONENT: EntityComponent(_LOGGER, DOMAIN, hass),
                 ENTITIES: {},
                 HANDLERS: {},
+                MAIN_ENTITY_PLATFORMS: {},
             },
         )
         _LOGGER.info(STARTUP_MESSAGE)
+    else:
+        hass.data[DOMAIN].setdefault(MAIN_ENTITY_PLATFORMS, {})
 
     handler = BodyScaleMetricsHandler(
         hass, {**entry.data, **entry.options}, entry.entry_id
@@ -120,7 +147,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     component: EntityComponent = hass.data[DOMAIN][COMPONENT]
     entity = Bodymiscale(handler)
-    await component.async_add_entities([entity])
+    await _async_add_bodymiscale_entity(component, entry, entity)
     hass.data[DOMAIN][ENTITIES][entry.entry_id] = entity.entity_id
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -136,9 +163,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         entity_id = hass.data[DOMAIN][ENTITIES].pop(entry.entry_id, None)
-        if entity_id is not None:
-            component: EntityComponent = hass.data[DOMAIN][COMPONENT]
-            await component.async_remove_entity(entity_id)
+        platform = hass.data[DOMAIN][MAIN_ENTITY_PLATFORMS].pop(entry.entry_id, None)
+        if entity_id is not None and platform is not None:
+            await platform.async_remove_entity(entity_id)
+        if platform is not None:
+            await platform.async_destroy()
 
         handler: BodyScaleMetricsHandler = hass.data[DOMAIN][HANDLERS].pop(
             entry.entry_id
