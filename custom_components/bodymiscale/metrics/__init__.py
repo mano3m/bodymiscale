@@ -463,7 +463,7 @@ class BodyScaleMetricsHandler:
         if val > CONSTRAINT_IMPEDANCE_MAX:
             return False, "high"
 
-        previous_val = self._available_metrics.get(Metric.WEIGHT)
+        previous_val = self._available_metrics.get(metric)
         self._update_available_metric(metric, val)
 
         # Fallback timestamp if no dedicated sensor
